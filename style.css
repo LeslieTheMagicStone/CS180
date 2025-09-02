@@ -1,0 +1,70 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #e3e3d8;
+    color: #6c6c6c;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    max-width: 600px;
+    margin: 40px auto;
+    background: #f6f6f2;
+    border: 2px solid #bdbdbd;
+    box-shadow: 0 0 16px #bdbdbd44;
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+}
+h1, h2 {
+    font-size: 1.5em;
+    margin-bottom: 24px;
+    color: #4e4e4e;
+}
+a, .button {
+    display: inline-block;
+    margin: 24px 0;
+    padding: 12px 32px;
+    background: #ffd700;
+    color: #4e4e4e;
+    text-decoration: none;
+    border: 2px solid #bdbdbd;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: bold;
+    box-shadow: 0 2px 8px #bdbdbd44;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+a:hover, .button:hover {
+    background: #ffe066;
+    color: #222;
+    box-shadow: 0 4px 16px #bdbdbd88;
+}
+.pixel-art {
+    margin: 0 auto 24px auto;
+    display: block;
+    image-rendering: pixelated;
+    width: 64px;
+    height: 64px;
+}
+.section {
+    margin: 40px auto;
+    max-width: 900px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 16px #bdbdbd44;
+    padding: 32px;
+}
+.images-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+.images-row img, .images-row .gif {
+    max-width: 160px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+.gif {
+    max-width: 400px;
+}
