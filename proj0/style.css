@@ -1,0 +1,7 @@
+.images-row {
+    flex-wrap: wrap;
+}
+
+.bigger .images-row img {
+    max-width: 360px;
+}
