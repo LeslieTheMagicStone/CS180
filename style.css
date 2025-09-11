@@ -1,16 +1,16 @@
 body {
     font-family: Arial, sans-serif;
-    background: #e3e3d8;
-    color: #6c6c6c;
+    background: #282828;
+    color: #ebdbb2;
     margin: 0;
     padding: 0;
 }
 .container {
     max-width: 600px;
     margin: 40px auto;
-    background: #f6f6f2;
-    border: 2px solid #bdbdbd;
-    box-shadow: 0 0 16px #bdbdbd44;
+    background: #3c3836;
+    border: 2px solid #504945;
+    box-shadow: 0 0 16px #50494544;
     border-radius: 8px;
     padding: 32px;
     text-align: center;
@@ -24,20 +24,20 @@ a, .button {
     display: inline-block;
     margin: 24px 0;
     padding: 12px 32px;
-    background: #ffd700;
-    color: #4e4e4e;
+    background: #504945;
+    color: #ebdbb2;
     text-decoration: none;
-    border: 2px solid #bdbdbd;
+    border: 2px solid #b8bb26;
     border-radius: 8px;
     font-size: 1.1em;
     font-weight: bold;
-    box-shadow: 0 2px 8px #bdbdbd44;
+    box-shadow: 0 2px 8px #50494544;
     transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 a:hover, .button:hover {
-    background: #ffe066;
-    color: #222;
-    box-shadow: 0 4px 16px #bdbdbd88;
+    background: #665c54;
+    color: #fabd2f;
+    box-shadow: 0 4px 16px #b8bb2688;
 }
 .pixel-art {
     margin: 0 auto 24px auto;
@@ -59,6 +59,32 @@ a:hover, .button:hover {
     gap: 16px;
     justify-content: center;
     margin-bottom: 24px;
+}
+
+body {
+    background-color: #282828;
+    color: #ebdbb2;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #fabd2f;
+}
+
+a {
+    color: #b8bb26;
+    text-decoration: underline;
+}
+
+.section {
+    background-color: #3c3836;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.images-row img, .images-row .gif {
+    border: 2px solid #504945;
+    border-radius: 4px;
 }
 .images-row img, .images-row .gif {
     max-width: 160px;
