@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 1: Images of the Russian Empire</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+</body>
+    <div class="container">
+        <h1>Project Overview</h1>
+        <p>This project reconstructs color images from digitized Prokudin-Gorskii glass plate photographs. Each image contains three grayscale channels (assume blue, green, red) stacked vertically. The goal is to align these channels using image processing techniques and produce a single RGB image with minimal artifacts.</p>
+
+        <h2>Approach</h2>
+        <h3>Single-Scale Alignment</h3>
+        <table>
+                        <thead>
+                            <tr><th>Image & Details</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <img src="./images/monastery.jpg" alt="monastery.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">monastery.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (-3, 2) &nbsp;|&nbsp; Shift (r): (3, 2) &nbsp;|&nbsp; Gen Time: 0.11s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/tobolsk.jpg" alt="tobolsk.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">tobolsk.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (3, 3) &nbsp;|&nbsp; Shift (r): (7, 3) &nbsp;|&nbsp; Gen Time: 0.10s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/cathedral.jpg" alt="cathedral.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">cathedral.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (5, 2) &nbsp;|&nbsp; Shift (r): (12, 3) &nbsp;|&nbsp; Gen Time: 0.10s</div>
+                                </td>
+                            </tr>
+                        </tbody>
+        </table>
+        <p>For single-scale alignment, I exhaustively search over a window ([-15, 15] pixels) of possible (x, y) displacements for the green and red channels relative to the blue channel. For each possible shift, I compute a similarity metric between the cropped reference and shifted channel, selecting the shift with the best score.</p>
+
+        <h4>Similarity Metrics</h4>
+        <ul>
+            <li><strong>L2 Norm</strong>: <code>sqrt(sum(sum((image1-image2).^2)))</code></li>
+            <li><strong>Normalized Cross-Correlation (NCC)</strong>: <code>(image1./||image1|| and image2./||image2||)</code></li>
+        </ul>
+        <p>The intuition of the two methods are similar: When an image is lightened, the pixel values increase, and vice versa. That is to say, the pixel values of two aligned channels often increase or decrease together, leading to a smaller L2 norm and a larger NCC value.</p>
+        <p>The two methods both work pretty well, and produce very similar results on the three smaller image examples. That suggests both metrics are good enough to produce satisfactory results. However, I choose NCC as the default metric because its relatively better performance and that its computation time overhead is not significant.</p>
+
+        <h4>Cropping</h4>
+        <p>Singly using the similarity metrics on the full image sometimes produces unsatisfactory results. That's because the three channels all have some artifacts, which can mislead the alignment process.</p>
+        <blockquote>As the course staff Alexei Efros suggested, <em>both lens imperfections and also photo plate degradations are worse away from the center of the image, it's perfectly fine to crop very aggressively (as much as 2/3rds of the image!).</em></blockquote>
+        <p>For my implementation, I crop 30% of the image from each side, leaving the central 40% of the image for alignment. This helps to avoid edge artifacts and focuses on the most relevant parts of the image, which significantly improves the alignment quality.</p>
+
+        <h3>Multi-Scale Pyramid Alignment</h3>
+        <table>
+                        <thead>
+                            <tr><th>Image & Details</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <img src="./images/emir.jpg" alt="emir.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">emir.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (48, 24) &nbsp;|&nbsp; Shift (r): (-222, -3) &nbsp;|&nbsp; Gen Time: 13.75s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/italil.jpg" alt="italil.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">italil.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (37, 21) &nbsp;|&nbsp; Shift (r): (76, 36) &nbsp;|&nbsp; Gen Time: 19.42s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/church.jpg" alt="church.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">church.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (25, 4) &nbsp;|&nbsp; Shift (r): (58, -4) &nbsp;|&nbsp; Gen Time: 18.70s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/three_generations.jpg" alt="three_generations.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">three_generations.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (50, 14) &nbsp;|&nbsp; Shift (r): (110, 12) &nbsp;|&nbsp; Gen Time: 18.66s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/lugano.jpg" alt="lugano.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">lugano.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (40, -15) &nbsp;|&nbsp; Shift (r): (93, -29) &nbsp;|&nbsp; Gen Time: 19.47s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/melons.jpg" alt="melons.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">melons.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (81, 9) &nbsp;|&nbsp; Shift (r): (179, 12) &nbsp;|&nbsp; Gen Time: 19.38s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/lastochikino.jpg" alt="lastochikino.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">lastochikino.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (-3, -1) &nbsp;|&nbsp; Shift (r): (75, -8) &nbsp;|&nbsp; Gen Time: 19.18s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/icon.jpg" alt="icon.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">icon.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (41, 18) &nbsp;|&nbsp; Shift (r): (90, 23) &nbsp;|&nbsp; Gen Time: 19.89s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/siren.jpg" alt="siren.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">siren.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (49, -5) &nbsp;|&nbsp; Shift (r): (96, -23) &nbsp;|&nbsp; Gen Time: 20.28s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/self_portrait.jpg" alt="self_portrait.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">self_portrait.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (78, 29) &nbsp;|&nbsp; Shift (r): (175, 37) &nbsp;|&nbsp; Gen Time: 20.33s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/harvesters.jpg" alt="harvesters.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">harvesters.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (59, 17) &nbsp;|&nbsp; Shift (r): (123, 14) &nbsp;|&nbsp; Gen Time: 14.03s</div>
+                                </td>
+                            </tr>
+                        </tbody>
+        </table>
+        <p>For larger images, single-scale alignment can be computationally expensive as the search window increases. To address this, I implement a multi-scale pyramid alignment approach.</p>
+
+        <h4>Image Pyramid</h4>
+        <p>I create an image pyramid by repeatedly downsampling the image by a factor of 2, creating in total 4 levels (original size, 1/2, 1/4, 1/8). Manually setting this to 4 levels works well for the provided images. Starting from the smallest image, I perform single-scale alignment (with cropping) to find the best shifts for the green and red channels. Then I double them to account for the increased resolution, and use them as the initial shift for the new search on next level image. The search window (in pixel) keeps the same in the whole process. In this refining way, I can use much smaller search windows. (stays 15 pixels even for the largest image)</p>
+
+        <h3>Failure Case</h3>
+        <p>The approach works for most of the example images, but fails on the image <code>emir.tif</code> (sadly, emir flies into space). As I mentioned, the metrics rely on the assumption that the pixel values of two aligned channels are often high or low together. However in <code>emir.tif</code>, images to be matched do not actually have the same brightness values (they are different color channels). Emir is wearing a blue cloth, which is very bright in the blue channel but very dark in the red channel, while the flower patterns on the cloth are quite the opposite. This violates the assumption and leads to bad alignment. When I reduce the cropping ratio to 10%, the alignment improves a bit, but still not good enough. This result supports the explanation above, since now the alignment is influenced more by the edge environment, which are similar in all three channels.</p>
+
+        <h3>More Examples!</h3>
+        <p>Here are some result of my algorithm on a few examples of my own choosing, downloaded from the Prokudin-Gorskii collection.</p>
+        <table>
+                        <thead>
+                            <tr><th>Image & Details</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <img src="./images/cheremukha.jpg" alt="cheremukha.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">cheremukha.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (-27, -95) &nbsp;|&nbsp; Shift (r): (23, -83) &nbsp;|&nbsp; Gen Time: 16.60s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/religious_painting.jpg" alt="religious_painting.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">religious_painting.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (35, 25) &nbsp;|&nbsp; Shift (r): (52, 38) &nbsp;|&nbsp; Gen Time: 15.09s</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="./images/kapri.jpg" alt="kapri.jpg">
+                                    <div style="font-size:1em;color:#b8bb26; margin-top:8px;">kapri.jpg</div>
+                                    <div style="font-size:0.95em; color:#ebdbb2; margin-top:4px;">Shift (g): (43, -12) &nbsp;|&nbsp; Shift (r): (102, -9) &nbsp;|&nbsp; Gen Time: 15.81s</div>
+                                </td>
+                            </tr>
+                        </tbody>
+        </table>
+    </div>
+</body>
+</body>
+</html>
