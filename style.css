@@ -37,7 +37,7 @@ body {
     padding: 0;
 }
 .container {
-    max-width: 800px;
+    max-width: 1200px;
 table img {
     max-width: 480px;
     height: auto;
@@ -45,6 +45,35 @@ table img {
     margin: 0 auto;
     border-radius: 6px;
     box-shadow: 0 2px 8px #50494544;
+}
+/* Regular content images */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px #50494544;
+}
+/* Code blocks */
+pre {
+    background: #1d2021;
+    border: 1px solid #504945;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+}
+code {
+    background: #1d2021;
+    color: #b8bb26;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+pre code {
+    background: transparent;
+    padding: 0;
 }
     margin: 40px auto;
     background: #3c3836;
