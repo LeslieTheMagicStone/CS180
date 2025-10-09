@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Project 3: Panoramas</title>
+    <title>Project 3: (Auto)stitching and Photo Mosaics</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="./style.css">
 </head>
@@ -10,7 +10,7 @@
         <h1>Project 3</h1>
 
         <h2>Part A.1: Shoot the Pictures</h2>
-        <p>To create my own panoramas, I used my phone to take three sets of overlapping photos.</p>
+        <p>I used my phone to take three sets of overlapping photos.</p>
 
         <img src="./images/haas_images.jpg" alt="Haas courtyard photos">
         <img src="./images/outdoor_images.jpg" alt="Outside window photos">
@@ -131,7 +131,7 @@
         <p>For the mosaics I kept the rightmost picture fixed and inverse-warped the leftmost picture to that canvas. Every warp returns an image plus an alpha map describing where the transform landed inside bounds. I convert those sparse alphas into smooth weight fields with <code>feather_alpha_dt</code> (a distance transform capped at 100 px), so each pixel's contribution tapers off toward image borders. Summing <code>image * weight</code> across the stack and dividing by the accumulated weights produces a seamless blend without hard seams.
         For image warping, I used nearest neighbor interpolation for better speed with reasonable quality.</p>
 
-        <h3>Haas courtyard panorama</h3>
+        <h3>Haas courtyard</h3>
         <img src="./images/mosaic_haas.jpg" alt="Haas courtyard sources and mosaic">
 
         <h3>View outside my window</h3>
