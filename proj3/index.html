@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 3: Panoramas</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Project 3</h1>
+
+        <h2>Part A.1: Shoot the Pictures</h2>
+        <p>To create my own panoramas, I used my phone to take three sets of overlapping photos.</p>
+
+        <img src="./images/haas_images.jpg" alt="Haas courtyard photos">
+        <img src="./images/outdoor_images.jpg" alt="Outside window photos">
+        <img src="./images/kt_images.jpg" alt="Kitchen photos">
+
+        <h2>Part A.2: Recovering Homographies</h2>
+        <p>Before any warping or mosaicing, I needed the homography <em>H</em> that maps a point <code>p = [x, y, 1]^T</code> in image 1 to its correspondence <code>p' = [x', y', 1]^T</code> in image 2 via <code>p' ~ H p</code>. Because <em>H</em> has eight degrees of freedom (the (3,3) entry can be fixed to 1), every correspondence gives me two linear equations. Stacking <em>n</em> correspondences yields the familiar DLT design matrix <em>A</em>:</p>
+
+        <pre><code>[-x  -y  -1   0   0   0   xx'  yx'  x']
+[ 0   0   0  -x  -y  -1   xy'  yy'  y']
+[h1 h2 h3 h4 h5 h6 h7 h8 h9]^T = 0
+        </code></pre>
+
+        <p>With <em>n</em> ≥ 4 correspondences the system is overdetermined, so, following the DLT recipe, I solve <code>A h = 0</code> in the least-squares sense by taking the right-singular vector corresponding to the smallest singular value.</p>
+
+        <p>The plots below are the correspondences I manually selected using the online tool made by a prior student (<a href="https://cal-cs180.github.io/fa23/hw/proj3/tool.html" target="_blank" rel="noopener">https://cal-cs180.github.io/fa23/hw/proj3/tool.html</a>).</p>
+
+        <img src="./images/haas_correspondences.jpg" alt="Haas courtyard correspondences">
+        <img src="./images/outdoor_correspondences.jpg" alt="Outdoor plaza correspondences">
+        <img src="./images/kt_correspondences.jpg" alt="Kitchen correspondences">
+
+        <p>After solving for <em>H</em> I validated each solution. I projected the image-1 points through <em>H</em> and computed the reprojection error <code>||H p - p'||_2</code>. The statistics are tiny, confirming the least-squares fit is stable.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Pair</th>
+                    <th>Homography H</th>
+                    <th>Mean reprojection error (px)</th>
+                    <th>Max error (px)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Haas courtyard</td>
+                    <td><code>[1.56, -0.15, -610.03]<br>[0.52, 1.39, -490.95]<br>[4.3e-4, 1.6e-5, 1]</code></td>
+                    <td>2.07</td>
+                    <td>5.01</td>
+                </tr>
+                <tr>
+                    <td>View outside my window</td>
+                    <td><code>[1.44, 0.081, -633.44]<br>[0.22, 1.26, -144.63]<br>[3.5e-4, -8.9e-6, 1]</code></td>
+                    <td>2.00</td>
+                    <td>4.34</td>
+                </tr>
+                <tr>
+                    <td>Kitchen</td>
+                    <td><code>[1.71, -0.045, -950.19]<br>[0.46, 1.53, -507.11]<br>[4.9e-4, 5.3e-5, 1]</code></td>
+                    <td>1.43</td>
+                    <td>3.49</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Part A.3: Warp the Images</h2>
+        <p>Then I implemented inverse warping in two flavors. Both <code>warpImageNearestNeighbor</code> and <code>warpImageBilinear</code> pre-compute the canvas bounds by pushing the source image corners through <em>H</em>, loop over every integer pixel on that canvas, pull back through <code>H<sup>-1</sup></code>, and sample the source only when the back-projected coordinate lands inside the image bounds. The functions also return an alpha mask so later blending steps can reason about valid pixels.</p>
+
+        <p>Below are two examples comparing the interpolation schemes. The qualities are quite similar, but the bilinear versions preserve fine details slightly better (e.g., the “Entry 3” text of the Haas picture), at the cost of roughly doubling the runtime.</p>
+
+        <img src="./images/warp_haas_comparison.jpg" alt="Haas warp comparison">
+        <img src="./images/warp_outdoor_comparison.jpg" alt="Outdoor warp comparison">
+
+        <p>Here are the timings:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Example</th>
+                    <th>Nearest (ms)</th>
+                    <th>Bilinear (ms)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Haas courtyard</td>
+                    <td>7,420</td>
+                    <td>14,708</td>
+                </tr>
+                <tr>
+                    <td>View out of my window</td>
+                    <td>7,205</td>
+                    <td>14,031</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Rectification</h3>
+        <p>To validate that the warps behave outside of pairwise stitching, I rectified two single images. Using the same point-selection tool, I clicked the four corners of a planar patch (top-left, top-right, bottom-left, bottom-right). For each set of points I built a rectangle whose width and height match the average of the opposing side lengths, solved <code>computeH(pts_quad, target_rect)</code>, and warped the image with both methods.</p>
+
+        <img src="./images/rect_ctbd.jpg" alt="Countertop cutting board rectification">
+        <img src="./images/rect_fish.jpg" alt="Fish market menu rectification">
+
+        <p>Both tests worked well.</p>
+
+        <p>Here are the timings:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Example</th>
+                    <th>Nearest (ms)</th>
+                    <th>Bilinear (ms)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Cutting-board</td>
+                    <td>9,883</td>
+                    <td>19,112</td>
+                </tr>
+                <tr>
+                    <td>Filet-O-Fish</td>
+                    <td>8,431</td>
+                    <td>15,263</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Part A.4: Blend the Images into a Mosaic</h2>
+        <p>For the mosaics I kept the rightmost picture fixed and inverse-warped the leftmost picture to that canvas. Every warp returns an image plus an alpha map describing where the transform landed inside bounds. I convert those sparse alphas into smooth weight fields with <code>feather_alpha_dt</code> (a distance transform capped at 100 px), so each pixel’s contribution tapers off toward image borders. Summing <code>image * weight</code> across the stack and dividing by the accumulated weights produces a seamless blend without hard seams.</p>
+
+        <h3>Haas courtyard panorama</h3>
+        <img src="./images/mosaic_haas.jpg" alt="Haas courtyard sources and mosaic">
+
+        <h3>View outside my window</h3>
+        <img src="./images/mosaic_window.jpg" alt="Window view sources and mosaic">
+
+        <h3>Kitchen</h3>
+        <img src="./images/mosaic_kt.jpg" alt="Kitchen sources and mosaic">
+
+        <p>Across all three examples the weighted average handles both sky gradients and textured surfaces well. The only noticeable artifacts are minor lighting level differences between the views, resulting from automatic exposure adjustments between shots.</p>
+    </div>
+</body>
+</html>
