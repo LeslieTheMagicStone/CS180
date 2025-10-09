@@ -68,7 +68,7 @@
         <h2>Part A.3: Warp the Images</h2>
         <p>Then I implemented inverse warping in two flavors. Both <code>warpImageNearestNeighbor</code> and <code>warpImageBilinear</code> pre-compute the canvas bounds by pushing the source image corners through <em>H</em>, loop over every integer pixel on that canvas, pull back through <code>H<sup>-1</sup></code>, and sample the source only when the back-projected coordinate lands inside the image bounds. The functions also return an alpha mask so later blending steps can reason about valid pixels.</p>
 
-        <p>Below are two examples comparing the interpolation schemes. The qualities are quite similar, but the bilinear versions preserve fine details slightly better (e.g., the “Entry 3” text of the Haas picture), at the cost of roughly doubling the runtime.</p>
+        <p>Below are two examples comparing the interpolation schemes. The qualities are similar, but the bilinear versions preserve fine details slightly better (e.g., the “Entry 3” text of the Haas picture), at the cost of roughly doubling the runtime.</p>
 
         <img src="./images/warp_haas_comparison.jpg" alt="Haas warp comparison">
         <img src="./images/warp_outdoor_comparison.jpg" alt="Outdoor warp comparison">
@@ -128,7 +128,8 @@
         </table>
 
         <h2>Part A.4: Blend the Images into a Mosaic</h2>
-        <p>For the mosaics I kept the rightmost picture fixed and inverse-warped the leftmost picture to that canvas. Every warp returns an image plus an alpha map describing where the transform landed inside bounds. I convert those sparse alphas into smooth weight fields with <code>feather_alpha_dt</code> (a distance transform capped at 100 px), so each pixel’s contribution tapers off toward image borders. Summing <code>image * weight</code> across the stack and dividing by the accumulated weights produces a seamless blend without hard seams.</p>
+        <p>For the mosaics I kept the rightmost picture fixed and inverse-warped the leftmost picture to that canvas. Every warp returns an image plus an alpha map describing where the transform landed inside bounds. I convert those sparse alphas into smooth weight fields with <code>feather_alpha_dt</code> (a distance transform capped at 100 px), so each pixel's contribution tapers off toward image borders. Summing <code>image * weight</code> across the stack and dividing by the accumulated weights produces a seamless blend without hard seams.
+        For image warping, I used nearest neighbor interpolation for better speed with reasonable quality.</p>
 
         <h3>Haas courtyard panorama</h3>
         <img src="./images/mosaic_haas.jpg" alt="Haas courtyard sources and mosaic">
