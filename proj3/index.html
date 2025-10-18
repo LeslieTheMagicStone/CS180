@@ -141,6 +141,85 @@
         <img src="./images/mosaic_kt.jpg" alt="Kitchen sources and mosaic">
 
         <p>Across all three examples the weighted average handles both sky gradients and textured surfaces well. The only noticeable artifacts are minor lighting level differences between the views, resulting from automatic exposure adjustments between shots.</p>
+        <h2>Part B.1: Harris Corner Detection</h2>
+        <p>To find potential points, I used the Harris corner detector, as provided in the starter code. The function returns the local maximum points of "corner strength". Here are the raw Harris corners detected on two images before any filtering:</p>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:flex-start;">
+            <div style="text-align:center;">
+                <img src="./images/haas1_harris_all.png" alt="Harris raw 1" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas1</div>
+            </div>
+            <div style="text-align:center;">
+                <img src="./images/haas2_harris_all.png" alt="Harris raw 2" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas2</div>
+            </div>
+        </div>
+        <p>Wow! That was scary. Those raw Harris output contained so many corners, and was not effective for robust matching later on. So I applied a threshold to the corner strength (0.01 times the maximum corner strength) to filter out some weak corners. Here are the filtered Harris corners:</p>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:flex-start;">
+            <div style="text-align:center;">
+                <img src="./images/haas1_harris_strong_corners.png" alt="Harris filtered 1" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas1</div>
+            </div>
+            <div style="text-align:center;">
+                <img src="./images/haas2_harris_strong_corners.png" alt="Harris filtered 2" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas2</div>
+            </div>
+        </div>
+        <p>However, after the thresholding, the strong corners might be clustered together. So I applied ANMS to select well-distributed corners. For each corner, ANMS computes a suppression radius. The point that has no stronger neighbors has infinite radius. For other points, the radius is the distance to the nearest corner that has a significantly higher corner strength. Finally, it selects the top N points with the largest suppression radius. Here are the corners selected by ANMS:</p>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:flex-start;">
+            <div style="text-align:center;">
+                <img src="./images/haas1_harris_anms.png" alt="Harris ANMS 1" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas1</div>
+            </div>
+            <div style="text-align:center;">
+                <img src="./images/haas2_harris_anms.png" alt="Harris ANMS 2" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas2</div>
+            </div>
+        </div>
+        <p>After those steps, I obtained a fairly evenly distributed set of strong corners.</p>
+
+        <h2>Part B.2: Feature Descriptor Extraction</h2>
+        <p>To match the corners, I still needed a way to describe each corner. For each corner, I extracted a 40x40 patch centered at the corner, blurred it to make the descriptor more robust, and downsampled it to an 8x8 patch. Finally, I normalized the descriptor to make it robust to simple brightness and contrast changes. Here are some example patches extracted from the corners:</p>
+        <img src="./images/haas2_sampled_descriptor_points.png" alt="Feature points">
+        <img src="./images/haas_descriptors_visualization.png" alt="Feature patches">
+
+        <h2>Part B.3: Feature Matching</h2>
+        <p>Now we can match those descriptors! I measured the similarity between two descriptors using the L2 distance. I implemented a symmetric version of Lowe's ratio test to filter out ambiguous matches. For each descriptor in image 1, I found its two nearest neighbors in image 2. If the ratio of the distances to the nearest and second nearest neighbor is below a threshold, I accepted the match. I repeated the same process for each descriptor in image 2. Finally, I only kept the matches that were accepted in both directions. Here are the matches found between two images:</p>
+        <img src="./images/haas_matches_initial.png" alt="Feature matches">
+
+        <h2>Part B.4: RANSAC for Robust Homography</h2>
+        <p>As we can see, there are still some mismatches in the previous results due to repetitive patterns and noise. So I implemented RANSAC to find a robust homography that fits the inliers (correct matches) while ignoring the outliers (incorrect matches). I iteratively did the following: First, randomly select 4 distinct matches to compute a candidate homography. Then, I projected all the corners from image 1 to image 2 and calculated the squared Euclidean distance between the projected points and their corresponding points in image 2. Then I counted how many matches have a squared distance below a threshold, which are considered inliers. If the number of inliers is larger than the best one found so far, I updated the best homography and inlier set. After a fixed number of iterations, I re-computed the homography using all the inliers found for the best homography. Here are the inlier (green) and outlier (red) matches after RANSAC:</p>
+        <img src="./images/haas_matches_inliers_outliers.png" alt="RANSAC inliers and outliers">
+        <p>Finally, I used the computed homography to warp and blend the two images into a mosaic. Here are the final auto stitching results vs the manual stitching results on three image pairs:</p>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:flex-start; margin-bottom:12px;">
+            <div style="text-align:center;">
+                <img src="./images/haas_auto_mosaic.png" alt="Auto 1" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas auto</div>
+            </div>
+            <div style="text-align:center;">
+                <img src="./images/haas_manual_mosaic.jpg" alt="Manual 1" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">haas manual</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:flex-start; margin-bottom:12px;">
+            <div style="text-align:center;">
+                <img src="./images/desk_auto_mosaic.png" alt="Auto 2" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">desk auto</div>
+            </div>
+            <div style="text-align:center;">
+                <img src="./images/desk_manual_mosaic.jpg" alt="Manual 2" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">desk manual</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:flex-start; margin-bottom:12px;">
+            <div style="text-align:center;">
+                <img src="./images/boxes_auto_mosaic.png" alt="Auto 3" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">boxes auto</div>
+            </div>
+            <div style="text-align:center;">
+                <img src="./images/boxes_manual_mosaic.jpg" alt="Manual 3" style="max-width:320px; height:auto;">
+                <div style="font-size:0.95em; margin-top:4px;">boxes manual</div>
+            </div>
+        </div>
     </div>
 </body>
 </html>
