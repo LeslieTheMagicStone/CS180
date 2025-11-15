@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 4: Neural Radiance Field</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Proj4: Neural Radiance Field</h1>
+
+        <h2>Part 0: Camera Calibration and 3D Scanning</h2>
+        <p>This is my full pipeline: first calibrating my phone camera with an ArUco grid, then estimating camera-to-world poses for every capture, undistorting the images, and packaging everything into <code>object_dataset.npz</code> for later stages. Instead of following the spec’s “single marker in the capture set” recipe, I printed a small multi-marker board (3×2 grid) so every shot still had enough tag area for <code>solvePnP</code> but let me swing around to wider viewpoints without losing pose accuracy. I also kept the calibration handy for reuse, shuffled the capture order into train/val/test splits, and double-checked everything in viser before exporting the dataset.</p>
+        <p>Here is the camera frustum visualization from viser from two views:</p>
+        <img src="./images/view1.png" alt="view1">
+        <img src="./images/view2.png" alt="view2">
+
+        <h2>Part 1: Fit a Neural Field to a 2D Image</h2>
+        <p>In this part, I fit a neural field (an MLP) to represent a single 2D image. The network learned to map 2D pixel coordinates <code>(u, v)</code> to their corresponding 3-channel RGB color values.</p>
+
+        <h3>Model Architecture</h3>
+        <p>The network is still a coordinate MLP, but everything happens in 2D. I map each pixel location through an <code>L=10</code> positional encoding, which stretches the <code>(x, y)</code> pair into 42 scalars. Those features flow through four fully connected blocks at width 256, each followed by ReLU, before a final layer with Sigmoid produces RGB in the [0, 1] range. All layers use Xavier uniform init. I optimized the weights with Adam on MSE loss, running 2,000 iterations with a batch of 10,000 pixels at a learning rate of 1e-2.</p>
+
+        <h3>Training Progression</h3>
+        <p>Below are visualizations showing the network's output at different stages of training, demonstrating its convergence from a random initialization to a clear representation of the target image.</p>
+        <p><strong>1. Provided Test Image:</strong></p>
+        <img src="./images/p1_progression_test_grid.png" alt="test_image_progression">
+        <p><strong>2. My Own Image:</strong></p>
+        <img src="./images/p1_progression_custom_grid.png" alt="my_image_progression">
+
+        <h3>Hyperparameter Tuning</h3>
+        <p>I explored the effects of varying the positional encoding's max frequency (L) and the network's width. The results are shown in the 2x2 grid below.</p>
+        <img src="./images/p1_grid_results.png" alt="grid_results">
+        <p>As seen, a higher frequency (L) is crucial for capturing high-frequency details. A larger network width also improves the model's capacity to represent the image accurately, preventing oversmoothing.</p>
+
+        <h3>PSNR Curve</h3>
+        <p>The following plot shows the Peak Signal-to-Noise Ratio (PSNR) over training iterations for one of the images.</p>
+        <img src="./images/p1_psnr_curve.png" alt="psnr_curve">
+
+        <h2>Part 2: Fit a Neural Radiance Field from Multi-view Images</h2>
+        <p>I first implemented the functions without using batch. Then I vectorized the implementation to support batch processing.</p>
+
+        <h3>Part 2.1 Create Rays from Cameras</h3>
+        <p>Camera to world coordinate conversion: multiply camera-space points by the c2w rotation and add translation to get world-space positions.</p>
+        <p>Pixel to camera coordinate conversion: subtract the principal point, divide by focal lengths, and scale by depth to back-project pixel coordinates into camera space.</p>
+        <p>Pixel to ray: use the camera origin (translation) with normalized directions from the back-projected points to build per-pixel rays.</p>
+
+        <h3>Part 2.2 Sampling</h3>
+        <p>Sampling rays from images: precompute all ray origins/directions and RGB targets for every camera to sample random training batches efficiently.</p>
+        <p>Sample along rays: stratified sample N points between near/far per ray (with optional perturbation) and lift them into 3D for NeRF evaluation.</p>
+
+        <h3>Part 2.3 Putting the Dataloading All Together</h3>
+        <p>I put together the dataloading pipeline and visualize the sampled rays using the provided script. Here is a screenshot of the visualization of sampled rays from multiple images:</p>
+        <img src="./images/multi-cam.png" alt="multi_cam">
+        <p>Here is a screenshot of the visualization of sampled rays from a single image:</p>
+        <img src="./images/single-cam.png" alt="single_cam">
+
+        <h3>Part 2.4 Neural Radiance Field</h3>
+        <p>The network still follows the Part 1 MLP recipe, but now the inputs are 3D samples and their view directions. In practice, I expand each 3D location with an <code>L=10</code> positional encoding (63 dims) and run it through an 8-layer, 256-wide MLP. Every fourth layer re-concatenates the original encoding so deeper blocks don’t lose sight of the input. The density head is a single linear layer with ReLU to keep sigma non-negative. The color head concatenates the shared features with an <code>L=4</code> encoding of the unit ray direction, then passes through two linear layers ending in a Sigmoid to clamp RGB to [0, 1]. The model therefore produces <code>(sigma, rgb)</code> tuples ready for volume rendering.</p>
+
+        <h3>Part 2.5 Volume Rendering</h3>
+        <p>After predicting <code>(sigma, rgb)</code>, I integrate along each ray in torch. A fixed step size produces deltas, alphas come from <code>1 - exp(-sigma * delta)</code>, and a running <code>cumprod</code> keeps track of how much light survives earlier samples. Multiplying those weights with RGB and summing yields the rendered color, and the whole chain stays differentiable for backprop. With this renderer plus the MLP above, the lego run clears 23 dB PSNR (peaking near 24) using Adam at 5e-4 for roughly a thousand steps with 10K rays per batch.</p>
+        <p>Using the above components, I trained the NeRF on the provided lego dataset. Below are the training progression and PSNR curve:</p>
+        <img src="./images/lego_training_progression.png" alt="lego_progression">
+        <img src="./images/lego_validation_psnr.png" alt="lego_psnr">
+
+        <h3>Part 2.6: Training with My Own Data</h3>
+        <p>For my custom object I reused the same pipeline but shrank the near/far bounds to 0.05–0.5 meters so the sampler hugged the small scene. I kept the batch size at 10k rays and trained for roughly 3k iterations, stopping once the validation PSNR stopped improving even though the training loss was still inching downward. At that point the renders had converged and the held-out PSNR had plateaued, so I saved the best-performing checkpoint and moved on to generating the required figures.</p>
+        <p>Below are the required deliverables I generated:</p>
+        <p>Training loss over time:</p>
+        <img src="./images/custom_training_loss.png" alt="custom_loss">
+        <p>Validation PSNR curve:</p>
+        <img src="./images/custom_validation_psnr.png" alt="custom_psnr">
+        <p>Intermediate validation renders:</p>
+        <img src="./images/custom_training_progression.png" alt="custom_progression">
+        <p>Orbit of novel views:</p>
+        <img src="./images/custom_orbit.gif" alt="Orbit GIF">
+    </div>
+</body>
+</html>
