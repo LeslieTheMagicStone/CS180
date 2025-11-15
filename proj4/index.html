@@ -60,12 +60,13 @@
 
         <h3>Part 2.5 Volume Rendering</h3>
         <p>After predicting <code>(sigma, rgb)</code>, I integrate along each ray in torch. A fixed step size produces deltas, alphas come from <code>1 - exp(-sigma * delta)</code>, and a running <code>cumprod</code> keeps track of how much light survives earlier samples. Multiplying those weights with RGB and summing yields the rendered color, and the whole chain stays differentiable for backprop. With this renderer plus the MLP above, the lego run clears 23 dB PSNR (peaking near 24) using Adam at 5e-4 for roughly a thousand steps with 10K rays per batch.</p>
-        <p>Using the above components, I trained the NeRF on the provided lego dataset. Below are the training progression and PSNR curve:</p>
+        <p>Using the above components, I trained the NeRF on the provided lego dataset. Below are the training progression, PSNR curve, and novel view gif:</p>
         <img src="./images/lego_training_progression.png" alt="lego_progression">
         <img src="./images/lego_validation_psnr.png" alt="lego_psnr">
+        <img src="./images/lego_orbit.gif" alt="Lego Orbit GIF">
 
         <h3>Part 2.6: Training with My Own Data</h3>
-        <p>For my custom object I reused the same pipeline but shrank the near/far bounds to 0.05–0.5 meters so the sampler hugged the small scene. I kept the batch size at 10k rays and trained for roughly 3k iterations, stopping once the validation PSNR stopped improving even though the training loss was still inching downward. At that point the renders had converged and the held-out PSNR had plateaued, so I saved the best-performing checkpoint and moved on to generating the required figures.</p>
+        <p>For my custom object I reused the same pipeline but shrank the near/far bounds to 0.05-0.5 meters so the sampler hugged the small scene. I kept the batch size at 10k rays and trained for roughly 3k iterations, stopping once the validation PSNR stopped improving even though the training loss was still inching downward. At that point the renders had converged and the held-out PSNR had plateaued, so I saved the best-performing checkpoint and moved on to generating the required figures.</p>
         <p>Below are the required deliverables I generated:</p>
         <p>Training loss over time:</p>
         <img src="./images/custom_training_loss.png" alt="custom_loss">
